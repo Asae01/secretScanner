@@ -81,7 +81,7 @@ def test_stripe_test_key_is_ignored():
 
 def test_patterns_load_from_json():
     assert "AWS Access Key" in PATTERNS
-    assert len(PATTERNS) == 7
+    assert len(PATTERNS) == 8
 
 
 def test_custom_patterns_file(tmp_path):
@@ -111,3 +111,34 @@ def test_ignores_low_entropy_string():
 
 def test_ignores_short_string():
     assert rules_found('id = "aB3xK9mQ2wL7"') == []
+
+def test_detects_unquoted_password_in_env():
+    assert "Unquoted Config Secret" in rules_found("DB_PASSWORD=hunter2")
+
+
+def test_detects_unquoted_token_in_env():
+    assert "Unquoted Config Secret" in rules_found(f"API_TOKEN={RANDOM_LOOKING}")
+
+
+def test_detects_export_prefix():
+    assert "Unquoted Config Secret" in rules_found("export API_KEY=abcd1234")
+
+
+def test_ignores_env_variable_reference():
+    assert rules_found("DB_PASSWORD=${DB_PASSWORD}") == []
+
+
+def test_ignores_env_line_without_secret_name():
+    assert rules_found("DB_HOST=localhost") == []
+
+
+def test_ignores_code_keyword_argument():
+    assert rules_found('    password=os.environ["DB_PASS"],') == []
+
+
+def test_detects_high_entropy_unquoted_value():
+    assert "High-Entropy String" in rules_found(f"SESSION={RANDOM_LOOKING}")
+
+
+def test_ignores_unquoted_low_entropy_value():
+    assert rules_found("SESSION=" + "ab" * 15) == []
