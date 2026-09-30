@@ -1,5 +1,7 @@
 # secretScanner
 
+[![CI](https://github.com/Asae01/secretScanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Asae01/secretScanner/actions/workflows/ci.yml)
+
 A beginner-friendly tool that scans a folder for accidentally exposed
 secrets like API keys and passwords, before you push them to GitHub.
 
