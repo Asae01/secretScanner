@@ -1,11 +1,15 @@
+import json
 import re
+from pathlib import Path
 
-PATTERNS = {
-    "AWS Access Key": re.compile(r"AKIA[0-9A-Z]{16}"),
-    "GitHub Token": re.compile(r"ghp_[A-Za-z0-9]{36}"),
-    "Slack Token": re.compile(r"xox[baprs]-[A-Za-z0-9-]{10,}"),
-    "Private Key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
-    "Hardcoded Password": re.compile(r"(?i)password\s*=\s*['\"][^'\"]+['\"]"),
-    "Stripe Secret Key": re.compile(r"(?:sk|rk)_live_[0-9a-zA-Z]{24,}"),
-    "Google API Key": re.compile(r"AIza[0-9A-Za-z_-]{35}"),
-}
+DEFAULT_PATTERNS_FILE = Path(__file__).with_name("patterns.json")
+
+
+def load_patterns(path=DEFAULT_PATTERNS_FILE):
+    """Read rules from a JSON file. Returns {rule name: compiled regex}."""
+    with open(path, encoding="utf-8") as f:
+        rules = json.load(f)
+    return {rule["name"]: re.compile(rule["regex"]) for rule in rules}
+
+
+PATTERNS = load_patterns()

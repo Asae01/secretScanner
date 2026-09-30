@@ -1,0 +1,30 @@
+[
+  {
+    "name": "AWS Access Key",
+    "regex": "AKIA[0-9A-Z]{16}"
+  },
+  {
+    "name": "GitHub Token",
+    "regex": "ghp_[A-Za-z0-9]{36}"
+  },
+  {
+    "name": "Slack Token",
+    "regex": "xox[baprs]-[A-Za-z0-9-]{10,}"
+  },
+  {
+    "name": "Private Key",
+    "regex": "-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
+  },
+  {
+    "name": "Hardcoded Password",
+    "regex": "(?i)password\\s*=\\s*['\"][^'\"]+['\"]"
+  },
+  {
+    "name": "Stripe Secret Key",
+    "regex": "(?:sk|rk)_live_[0-9a-zA-Z]{24,}"
+  },
+  {
+    "name": "Google API Key",
+    "regex": "AIza[0-9A-Za-z_-]{35}"
+  }
+]
