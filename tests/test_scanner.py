@@ -1,5 +1,13 @@
 from secret_scanner.patterns import PATTERNS, load_patterns
-from secret_scanner.scanner import Finding, Skipped, scan_file, scan_text
+from secret_scanner.scanner import (
+    Finding,
+    Skipped,
+    is_ignored,
+    load_ignore_patterns,
+    scan_file,
+    scan_folder,
+    scan_text,
+)
 from secret_scanner.entropy import shannon_entropy
 
 # We build fake secrets from pieces so this file never contains a complete
@@ -142,3 +150,44 @@ def test_detects_high_entropy_unquoted_value():
 
 def test_ignores_unquoted_low_entropy_value():
     assert rules_found("SESSION=" + "ab" * 15) == []
+
+def test_ignore_directory_pattern():
+    assert is_ignored("tests/certs/server.key", ["tests/certs/"])
+    assert not is_ignored("src/certs.py", ["tests/certs/"])
+
+
+def test_ignore_extension_pattern():
+    assert is_ignored("tests/certs/server.key", ["*.key"])
+    assert not is_ignored("notes.txt", ["*.key"])
+
+
+def test_ignore_bare_directory_name_matches_anywhere():
+    assert is_ignored("a/b/fixtures/data.txt", ["fixtures/"])
+    assert not is_ignored("fixtures.txt", ["fixtures/"])
+
+
+def test_ignore_exact_file():
+    assert is_ignored("config/dev.env", ["config/dev.env"])
+    assert not is_ignored("config/prod.env", ["config/dev.env"])
+
+
+def test_ignore_file_skips_comments_and_blank_lines(tmp_path):
+    ignore = tmp_path / ".secretscannerignore"
+    ignore.write_text("# a comment\n\n*.key\n  tests/certs/  \n", encoding="utf-8")
+    assert load_ignore_patterns(tmp_path) == ["*.key", "tests/certs/"]
+
+
+def test_missing_ignore_file_is_fine(tmp_path):
+    assert load_ignore_patterns(tmp_path) == []
+
+
+def test_scan_folder_respects_ignore_file(tmp_path):
+    secret_line = 'password = "hunter2"'  # secretscanner:ignore
+    (tmp_path / "keep.py").write_text(secret_line, encoding="utf-8")
+    certs = tmp_path / "tests" / "certs"
+    certs.mkdir(parents=True)
+    (certs / "fake.py").write_text(secret_line, encoding="utf-8")
+    (tmp_path / ".secretscannerignore").write_text("tests/certs/\n", encoding="utf-8")
+
+    findings = [i for i in scan_folder(tmp_path) if isinstance(i, Finding)]
+    assert [f.path.name for f in findings] == ["keep.py"]

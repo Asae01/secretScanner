@@ -1,3 +1,5 @@
+import fnmatch
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +15,9 @@ MAX_FILE_SIZE = 1_000_000
 # Any line containing this text is skipped (for known-fake data).
 IGNORE_MARKER = "secretscanner:ignore"
 
+# Users can list paths to skip in this file, inside the folder being scanned.
+IGNORE_FILE = ".secretscannerignore"
+
 @dataclass
 class Finding:
     path: Path
@@ -24,7 +29,6 @@ class Finding:
 class Skipped:
     path: Path
     reason: str
-
 
 def scan_text(text):
     """Check a block of text. Returns a list of (line_number, rule_name)."""
@@ -60,12 +64,51 @@ def scan_file(path):
     for line_number, rule in scan_text(text):
         yield Finding(path, line_number, rule)
 
+def load_ignore_patterns(folder):
+    """Read .secretscannerignore from a folder. Returns a list of patterns."""
+    path = Path(folder) / IGNORE_FILE
+    try:
+        # utf-8-sig also accepts files that start with a Windows BOM
+        lines = path.read_text(encoding="utf-8-sig").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []  # no ignore file, or an unreadable one
+    patterns = []
+    for line in lines:
+        line = line.strip()
+        if line and not line.startswith("#"):
+            patterns.append(line)
+    return patterns
+
+
+def is_ignored(relative_path, patterns):
+    """Check a path like 'tests/certs/server.key' against ignore patterns."""
+    parts = relative_path.split("/")
+    for pattern in patterns:
+        if pattern.endswith("/"):
+            directory = pattern.rstrip("/")
+            if "/" in directory:
+                if relative_path.startswith(directory + "/"):
+                    return True
+            elif directory in parts[:-1]:
+                return True
+        elif "/" in pattern:
+            if fnmatch.fnmatchcase(relative_path, pattern):
+                return True
+        elif any(fnmatch.fnmatchcase(part, pattern) for part in parts):
+            return True
+    return False
+
 
 def scan_folder(folder):
     """Walk a folder and yield every Finding (and every Skipped file)."""
-    for path in Path(folder).rglob("*"):
+    folder = Path(folder)
+    ignore_patterns = load_ignore_patterns(folder)
+    for path in folder.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in SKIP_DIRS for part in path.parts):
+        relative = path.relative_to(folder)
+        if any(part in SKIP_DIRS for part in relative.parts):
+            continue
+        if is_ignored(relative.as_posix(), ignore_patterns):
             continue
         yield from scan_file(path)
