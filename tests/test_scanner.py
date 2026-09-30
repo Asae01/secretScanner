@@ -1,3 +1,4 @@
+from secret_scanner.patterns import PATTERNS, load_patterns
 from secret_scanner.scanner import Finding, Skipped, scan_file, scan_text
 
 # We build fake secrets from pieces so this file never contains a complete
@@ -74,3 +75,18 @@ def test_short_stripe_lookalike_is_ignored():
 
 def test_stripe_test_key_is_ignored():
     assert rules_found("sk_test_" + "a" * 24) == []
+
+
+def test_patterns_load_from_json():
+    assert "AWS Access Key" in PATTERNS
+    assert len(PATTERNS) == 7
+
+
+def test_custom_patterns_file(tmp_path):
+    rules_file = tmp_path / "rules.json"
+    rules_file.write_text(
+        '[{"name": "Demo", "regex": "demo_[0-9]+"}]', encoding="utf-8"
+    )
+    rules = load_patterns(rules_file)
+    assert list(rules) == ["Demo"]
+    assert rules["Demo"].search("demo_123")
