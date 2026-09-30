@@ -28,6 +28,16 @@ PLACEHOLDER_MARKERS = (
 # secrets like AWS keys never need it.
 PLACEHOLDER_RULES = {"Hardcoded Password", "Unquoted Config Secret"}
 
+# Files with these extensions are binary, so they're skipped without a warning.
+BINARY_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svgz",
+    ".pdf", ".ai", ".psd",
+    ".zip", ".gz", ".tar", ".7z", ".rar", ".jar",
+    ".exe", ".dll", ".so", ".pyc", ".class",
+    ".woff", ".woff2", ".ttf", ".eot",
+    ".mp3", ".mp4", ".mov", ".avi",
+}
+
 @dataclass
 class Finding:
     path: Path
@@ -128,6 +138,8 @@ def scan_folder(folder):
         relative = path.relative_to(folder)
         if any(part in SKIP_DIRS for part in relative.parts):
             continue
+        if path.suffix.lower() in BINARY_EXTENSIONS:
+            continue 
         if is_ignored(relative.as_posix(), ignore_patterns):
             continue
         yield from scan_file(path)
