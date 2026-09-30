@@ -34,12 +34,15 @@ Example output:
 
 ```
 .\config.py:12  ->  Hardcoded Password
+skipped: .\logo.png (could not read as UTF-8 text)
 
 Done. 1 possible secret(s) found.
+1 file(s) skipped because they could not be scanned.
 ```
 
-The exit code is `1` if anything is found and `0` if the folder is clean,
-so other tools can use it to block a commit or fail a build.
+The exit code is `1` if any secret is found and `0` if not, so other tools
+can use it to block a commit or fail a build. Skipped files do not change
+the exit code.
 
 ## What it detects
 
@@ -48,6 +51,24 @@ so other tools can use it to block a commit or fail a build.
 - Slack tokens
 - Private keys
 - Hardcoded passwords
+
+## Skipped files
+
+Files the scanner can't read (binary files, files that aren't UTF-8 text,
+files over 1 MB, or files it lacks permission to open) are reported as
+`skipped` instead of being ignored silently. Skip messages go to stderr,
+separate from the results.
+
+## Ignoring known-fake data
+
+If a line contains fake data on purpose, such as a test password, add
+`secretscanner:ignore` to that line and the scanner will skip it:
+
+```
+password = "not-a-real-password"  # secretscanner:ignore
+```
+
+Only the marked line is skipped. The rest of the file is still scanned.
 
 ## Running the tests
 
@@ -58,9 +79,9 @@ python -m pytest
 
 ## Known limitations
 
-- It may flag harmless examples (false positives), such as test data.
 - It only finds secrets that match its patterns, so it can miss others.
-- Files that can't be read as UTF-8 text are skipped.
+- It may flag harmless examples (false positives) unless they are marked
+  with `secretscanner:ignore`.
 
 ## Contributing
 
