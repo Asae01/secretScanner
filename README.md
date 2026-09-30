@@ -132,6 +132,10 @@ python -m pytest
   `example`), so a real password containing one of them would be missed.
 - Files with known binary extensions are never scanned, even if they
   happen to contain text.
+- Lockfiles such as `package-lock.json` produce many false positives
+  (integrity hashes look random). Add them to `.secretscannerignore`.
+- `key: value` (YAML) and `"key": "value"` (JSON) secrets are not detected.
+- Git history is not scanned, only the current files.
 
 ## Contributing
 
