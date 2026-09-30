@@ -5,6 +5,8 @@ from secret_scanner.scanner import Finding, Skipped, scan_file, scan_text
 # flag our test file as a real leak.
 FAKE_AWS_KEY = "AKIA" + "IOSFODNN7EXAMPLE"
 FAKE_GITHUB_TOKEN = "ghp_" + "a" * 36
+FAKE_STRIPE_KEY = "sk_live_" + "a" * 24
+FAKE_GOOGLE_KEY = "AIza" + "a" * 35
 
 
 def rules_found(text):
@@ -57,3 +59,18 @@ def test_readable_file_is_scanned(tmp_path):
     results = list(scan_file(good))
     assert len(results) == 1
     assert isinstance(results[0], Finding)
+
+def test_detects_stripe_key():
+    assert "Stripe Secret Key" in rules_found(f"stripe = {FAKE_STRIPE_KEY}")
+
+
+def test_detects_google_key():
+    assert "Google API Key" in rules_found(f"key = {FAKE_GOOGLE_KEY}")
+
+
+def test_short_stripe_lookalike_is_ignored():
+    assert rules_found("sk_live_abc") == []
+
+
+def test_stripe_test_key_is_ignored():
+    assert rules_found("sk_test_" + "a" * 24) == []

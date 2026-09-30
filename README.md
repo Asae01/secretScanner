@@ -51,6 +51,8 @@ the exit code.
 - Slack tokens
 - Private keys
 - Hardcoded passwords
+- Stripe live secret keys
+- Google API keys
 
 ## Skipped files
 
