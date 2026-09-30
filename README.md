@@ -55,6 +55,17 @@ the exit code.
 - Hardcoded passwords
 - Stripe live secret keys
 - Google API keys
+- High-entropy strings (random-looking quoted text that may be a key)
+
+## High-entropy detection
+
+Some secrets don't match any known pattern. As a backup, the scanner flags
+quoted strings of 24 or more characters that look random (measured with
+Shannon entropy). This only runs on lines that no other rule matched.
+
+It can flag harmless random-looking strings such as hashes or IDs. Add
+`secretscanner:ignore` to those lines. It only checks quoted strings, so
+unquoted values (like `KEY=value` in a `.env` file) are not covered.
 
 ## Skipped files
 
