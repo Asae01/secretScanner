@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from .scanner import scan_folder
+from .scanner import Finding, scan_folder
 
 
 def main():
@@ -17,13 +17,20 @@ def main():
     )
     args = parser.parse_args()
 
-    count = 0
-    for finding in scan_folder(args.folder):
-        print(f"{finding.path}:{finding.line_number}  ->  {finding.rule}")
-        count += 1
+    found = 0
+    skipped = 0
+    for item in scan_folder(args.folder):
+        if isinstance(item, Finding):
+            print(f"{item.path}:{item.line_number}  ->  {item.rule}")
+            found += 1
+        else:
+            print(f"skipped: {item.path} ({item.reason})", file=sys.stderr)
+            skipped += 1
 
-    print(f"\nDone. {count} possible secret(s) found.")
-    sys.exit(1 if count else 0)
+    print(f"\nDone. {found} possible secret(s) found.")
+    if skipped:
+        print(f"{skipped} file(s) skipped because they could not be scanned.")
+    sys.exit(1 if found else 0)
 
 
 if __name__ == "__main__":
