@@ -26,5 +26,9 @@
   {
     "name": "Google API Key",
     "regex": "AIza[0-9A-Za-z_-]{35}"
+  },
+  {
+    "name": "Unquoted Config Secret",
+    "regex": "(?i)^\\s*(?:export\\s+)?[A-Za-z0-9_]*(?:password|passwd|secret|token|api_?key)[A-Za-z0-9_]*=[A-Za-z0-9+/_.!@%^&*=-]{4,}\\s*$"
   }
 ]

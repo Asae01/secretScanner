@@ -12,6 +12,11 @@ THRESHOLD = 4.2
 # A quoted run of 24+ characters made of letters, digits, and + / = _ -
 CANDIDATE = re.compile(r"[\"']([A-Za-z0-9+/=_-]{24,})[\"']")
 
+# An unquoted value on a KEY=value line, like in a .env file.
+UNQUOTED = re.compile(
+    r"^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_.]*\s*=\s*([A-Za-z0-9+/=_-]{24,})\s*$"
+)
+
 
 def shannon_entropy(text):
     """Return how random a string looks. 0 means totally predictable."""
@@ -25,9 +30,9 @@ def shannon_entropy(text):
 
 
 def find_high_entropy(line):
-    """Return the quoted strings in a line that look random."""
-    return [
-        match.group(1)
-        for match in CANDIDATE.finditer(line)
-        if shannon_entropy(match.group(1)) >= THRESHOLD
-    ]
+    """Return the strings in a line that look random."""
+    candidates = [match.group(1) for match in CANDIDATE.finditer(line)]
+    unquoted = UNQUOTED.match(line)
+    if unquoted:
+        candidates.append(unquoted.group(1))
+    return [c for c in candidates if shannon_entropy(c) >= THRESHOLD]
