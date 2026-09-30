@@ -9,6 +9,8 @@ SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
 # Skip files bigger than 1 MB so it scans fast.
 MAX_FILE_SIZE = 1_000_000
 
+# Any line containing this text is skipped (for known-fake data).
+IGNORE_MARKER = "secretscanner:ignore"
 
 @dataclass
 class Finding:
@@ -27,6 +29,8 @@ def scan_text(text):
     """Check a block of text. Returns a list of (line_number, rule_name)."""
     results = []
     for line_number, line in enumerate(text.splitlines(), start=1):
+        if IGNORE_MARKER in line:
+            continue  # this line skipped
         for rule_name, pattern in PATTERNS.items():
             if pattern.search(line):
                 results.append((line_number, rule_name))
