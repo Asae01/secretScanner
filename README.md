@@ -56,6 +56,7 @@ the exit code.
 - Stripe live secret keys
 - Google API keys
 - High-entropy strings (random-looking quoted text that may be a key)
+- Unquoted secrets in `.env`-style lines, like `KEY=value` where the name contains password, secret, token, or api_key
 
 ## High-entropy detection
 
@@ -64,8 +65,8 @@ quoted strings of 24 or more characters that look random (measured with
 Shannon entropy). This only runs on lines that no other rule matched.
 
 It can flag harmless random-looking strings such as hashes or IDs. Add
-`secretscanner:ignore` to those lines. It only checks quoted strings, so
-unquoted values (like `KEY=value` in a `.env` file) are not covered.
+`secretscanner:ignore` to those lines. It checks quoted strings, and also
+unquoted values on `KEY=value` lines (as in `.env` files).
 
 ## Skipped files
 
@@ -97,6 +98,9 @@ python -m pytest
 - It only finds secrets that match its patterns, so it can miss others.
 - It may flag harmless examples (false positives) unless they are marked
   with `secretscanner:ignore`.
+- Only `KEY=value` lines are covered for unquoted secrets. YAML-style
+  `key: value` lines are not.
+- Names like `TOKEN_EXPIRY=86400` can be flagged even though they aren't secrets. Mark them with `secretscanner:ignore`.
 
 ## Contributing
 
