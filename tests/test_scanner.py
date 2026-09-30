@@ -1,5 +1,6 @@
 from secret_scanner.patterns import PATTERNS, load_patterns
 from secret_scanner.scanner import Finding, Skipped, scan_file, scan_text
+from secret_scanner.entropy import shannon_entropy
 
 # We build fake secrets from pieces so this file never contains a complete
 # key-shaped string. That way, scanners (including GitHub's own) won't
@@ -8,6 +9,7 @@ FAKE_AWS_KEY = "AKIA" + "IOSFODNN7EXAMPLE"
 FAKE_GITHUB_TOKEN = "ghp_" + "a" * 36
 FAKE_STRIPE_KEY = "sk_live_" + "a" * 24
 FAKE_GOOGLE_KEY = "AIza" + "a" * 35
+RANDOM_LOOKING = "aB3xK9mQ2wL7zR5tY8uP1nC4vD6eF0hG"  # secretscanner:ignore
 
 
 def rules_found(text):
@@ -90,3 +92,22 @@ def test_custom_patterns_file(tmp_path):
     rules = load_patterns(rules_file)
     assert list(rules) == ["Demo"]
     assert rules["Demo"].search("demo_123")
+
+def test_entropy_of_repeated_text_is_zero():
+    assert shannon_entropy("aaaaaaaa") == 0
+
+
+def test_entropy_of_varied_text_is_high():
+    assert shannon_entropy(RANDOM_LOOKING) > 4.5
+
+
+def test_detects_high_entropy_string():
+    assert "High-Entropy String" in rules_found(f'token = "{RANDOM_LOOKING}"')
+
+
+def test_ignores_low_entropy_string():
+    assert rules_found('name = "' + "ab" * 15 + '"') == []
+
+
+def test_ignores_short_string():
+    assert rules_found('id = "aB3xK9mQ2wL7"') == []

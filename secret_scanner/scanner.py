@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .patterns import PATTERNS
+from .entropy import find_high_entropy
 
 # Folders we dont need to scan.
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
@@ -30,10 +31,14 @@ def scan_text(text):
     results = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         if IGNORE_MARKER in line:
-            continue  # this line skipped
+            continue  # this line was marked as safe
+        matched = False
         for rule_name, pattern in PATTERNS.items():
             if pattern.search(line):
                 results.append((line_number, rule_name))
+                matched = True
+        if not matched and find_high_entropy(line):
+            results.append((line_number, "High-Entropy String"))
     return results
 
 
