@@ -96,6 +96,9 @@ files over 1 MB, or files it lacks permission to open) are reported as
 `skipped` instead of being ignored silently. Skip messages go to stderr,
 separate from the results.
 
+Common binary types (images, archives, fonts, compiled files) are skipped
+quietly, without a warning.
+
 ## Ignoring known-fake data
 
 If a line contains fake data on purpose, such as a test password, add
@@ -106,6 +109,9 @@ password = "not-a-real-password"  # secretscanner:ignore
 ```
 
 Only the marked line is skipped. The rest of the file is still scanned.
+
+Obvious placeholders in password-style values, such as `your-password-here`
+or `changeme`, are skipped automatically.
 
 ## Running the tests
 
@@ -122,6 +128,10 @@ python -m pytest
 - Only `KEY=value` lines are covered for unquoted secrets. YAML-style
   `key: value` lines are not.
 - Names like `TOKEN_EXPIRY=86400` can be flagged even though they aren't secrets. Mark them with `secretscanner:ignore`.
+- Placeholder detection is simple (it looks for words like `changeme` and
+  `example`), so a real password containing one of them would be missed.
+- Files with known binary extensions are never scanned, even if they
+  happen to contain text.
 
 ## Contributing
 

@@ -191,3 +191,34 @@ def test_scan_folder_respects_ignore_file(tmp_path):
 
     findings = [i for i in scan_folder(tmp_path) if isinstance(i, Finding)]
     assert [f.path.name for f in findings] == ["keep.py"]
+
+def test_ignores_placeholder_password():
+    assert rules_found('password = "your-password-here"') == []
+
+
+def test_ignores_changeme_value():
+    assert rules_found('password = "changeme"') == []
+
+
+def test_ignores_placeholder_in_env_line():
+    assert rules_found("DB_PASSWORD=changeme") == []
+
+
+def test_real_looking_password_is_still_caught():
+    assert "Hardcoded Password" in rules_found('password = "hunter2"')  # secretscanner:ignore
+
+
+def test_placeholder_does_not_hide_other_rules():
+    line = f'password = "your-pass"  key={FAKE_AWS_KEY}'
+    assert "AWS Access Key" in rules_found(line)
+
+def test_known_binary_files_are_skipped_quietly(tmp_path):
+    (tmp_path / "logo.png").write_bytes(b"\x89PNG\xff\xfe\x00\x80")
+    assert list(scan_folder(tmp_path)) == []
+
+
+def test_unknown_unreadable_files_are_still_reported(tmp_path):
+    (tmp_path / "data.bin").write_bytes(b"\xff\xfe\x00\x80\x81")
+    items = list(scan_folder(tmp_path))
+    assert len(items) == 1
+    assert isinstance(items[0], Skipped)

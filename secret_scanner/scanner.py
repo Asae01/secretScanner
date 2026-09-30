@@ -18,6 +18,26 @@ IGNORE_MARKER = "secretscanner:ignore"
 # Users can list paths to skip in this file, inside the folder being scanned.
 IGNORE_FILE = ".secretscannerignore"
 
+# Values containing any of these look like documentation, not real secrets.
+PLACEHOLDER_MARKERS = (
+    "your-", "your_", "your ", "changeme", "change-me", "change_me",
+    "example", "placeholder", "xxxx", "<", "redacted", "dummy",
+)
+
+# Only the password-style rules get the placeholder check. Key-shaped
+# secrets like AWS keys never need it.
+PLACEHOLDER_RULES = {"Hardcoded Password", "Unquoted Config Secret"}
+
+# Files with these extensions are binary, so they're skipped without a warning.
+BINARY_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svgz",
+    ".pdf", ".ai", ".psd",
+    ".zip", ".gz", ".tar", ".7z", ".rar", ".jar",
+    ".exe", ".dll", ".so", ".pyc", ".class",
+    ".woff", ".woff2", ".ttf", ".eot",
+    ".mp3", ".mp4", ".mov", ".avi",
+}
+
 @dataclass
 class Finding:
     path: Path
@@ -30,18 +50,27 @@ class Skipped:
     path: Path
     reason: str
 
+def looks_like_placeholder(text):
+    """True if text contains a marker such as 'changeme' or 'your-'."""
+    lowered = text.lower()
+    return any(marker in lowered for marker in PLACEHOLDER_MARKERS)
+
 def scan_text(text):
     """Check a block of text. Returns a list of (line_number, rule_name)."""
     results = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         if IGNORE_MARKER in line:
             continue  # this line was marked as safe
-        matched = False
+        handled = False
         for rule_name, pattern in PATTERNS.items():
-            if pattern.search(line):
-                results.append((line_number, rule_name))
-                matched = True
-        if not matched and find_high_entropy(line):
+            match = pattern.search(line)
+            if not match:
+                continue
+            handled = True
+            if rule_name in PLACEHOLDER_RULES and looks_like_placeholder(match.group(0)):
+                continue  # documentation, not a real secret
+            results.append((line_number, rule_name))
+        if not handled and find_high_entropy(line):
             results.append((line_number, "High-Entropy String"))
     return results
 
@@ -109,6 +138,8 @@ def scan_folder(folder):
         relative = path.relative_to(folder)
         if any(part in SKIP_DIRS for part in relative.parts):
             continue
+        if path.suffix.lower() in BINARY_EXTENSIONS:
+            continue 
         if is_ignored(relative.as_posix(), ignore_patterns):
             continue
         yield from scan_file(path)
