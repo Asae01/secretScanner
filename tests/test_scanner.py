@@ -191,3 +191,23 @@ def test_scan_folder_respects_ignore_file(tmp_path):
 
     findings = [i for i in scan_folder(tmp_path) if isinstance(i, Finding)]
     assert [f.path.name for f in findings] == ["keep.py"]
+
+def test_ignores_placeholder_password():
+    assert rules_found('password = "your-password-here"') == []
+
+
+def test_ignores_changeme_value():
+    assert rules_found('password = "changeme"') == []
+
+
+def test_ignores_placeholder_in_env_line():
+    assert rules_found("DB_PASSWORD=changeme") == []
+
+
+def test_real_looking_password_is_still_caught():
+    assert "Hardcoded Password" in rules_found('password = "hunter2"')  # secretscanner:ignore
+
+
+def test_placeholder_does_not_hide_other_rules():
+    line = f'password = "your-pass"  key={FAKE_AWS_KEY}'
+    assert "AWS Access Key" in rules_found(line)
