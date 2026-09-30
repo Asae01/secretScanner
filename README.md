@@ -68,6 +68,27 @@ It can flag harmless random-looking strings such as hashes or IDs. Add
 `secretscanner:ignore` to those lines. It checks quoted strings, and also
 unquoted values on `KEY=value` lines (as in `.env` files).
 
+## Ignoring files and folders
+
+Some files look like secrets on purpose, such as test certificates. To skip
+them, create a `.secretscannerignore` file in the folder you scan:
+
+```
+# Skip test certificates
+tests/certs/
+
+# Skip any folder named fixtures
+fixtures/
+
+# Skip all files ending in .key
+*.key
+```
+
+Lines starting with `#` are comments. A folder pattern with a slash in the
+middle (`tests/certs/`) is matched from the project root. A folder name on
+its own (`fixtures/`) matches at any depth. Note that `*` also matches
+across folders, so `tests/*.key` matches `tests/certs/a.key` too.
+
 ## Skipped files
 
 Files the scanner can't read (binary files, files that aren't UTF-8 text,
